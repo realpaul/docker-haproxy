@@ -36,8 +36,8 @@ RUN cd /usr/src \
     && make INSTALL_TOP=/opt/lua${LUA_VERSION_SHORT} install
 
 ENV HAPROXY_MAJOR 1.7
-ENV HAPROXY_VERSION 1.7.2
-ENV HAPROXY_MD5 7330b36f3764ebe409e9305803dc30e2
+ENV HAPROXY_VERSION 1.7.11
+ENV HAPROXY_MD5 25be5ad717a71da89a65c3c24250e2eb
 
 
 RUN cd / && curl -SL "http://www.haproxy.org/download/${HAPROXY_MAJOR}/src/haproxy-${HAPROXY_VERSION}.tar.gz" -o haproxy.tar.gz \
@@ -57,9 +57,9 @@ RUN cd / && curl -SL "http://www.haproxy.org/download/${HAPROXY_MAJOR}/src/hapro
 	&& mkdir -p /usr/local/etc/haproxy \
 	&& cp -R /usr/src/haproxy/examples/errorfiles /usr/local/etc/haproxy/errors \
 	&& rm -rf /usr/src/haproxy \
-    && apt-get update \
-    && apt-get install socat \
-    && apt-get autoremove
+    && apt-get -y update \
+    && apt-get -y install socat \
+    && apt-get -y autoremove
 
 COPY docker-entrypoint.sh /
 
