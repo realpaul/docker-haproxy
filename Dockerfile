@@ -57,6 +57,9 @@ RUN cd / && curl -SL "http://www.haproxy.org/download/${HAPROXY_MAJOR}/src/hapro
 	&& mkdir -p /usr/local/etc/haproxy \
 	&& cp -R /usr/src/haproxy/examples/errorfiles /usr/local/etc/haproxy/errors \
 	&& rm -rf /usr/src/haproxy
+    && apt-get update
+    && apt-get install socat
+    && apt-get autoremove
 
 COPY docker-entrypoint.sh /
 
