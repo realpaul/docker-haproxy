@@ -1,7 +1,8 @@
 # Much of this stolen from haproxy:1.6 dockerfile, with Lua support
 FROM debian:jessie
 
-RUN echo "deb http://archive.debian.org/debia jessie-backports main" > /etc/apt/sources.list.d/jessie.backports.list
+RUN echo "deb [check-valid-until=no] http://archive.debian.org/debian jessie-backports main" > /etc/apt/sources.list.d/jessie.backports.list
+RUN echo "Acquire::Check-Valid-Until \"false\";" > /etc/apt/apt.conf
 
 ENV SUPERVISOR_VERSION 3.3.0
 
