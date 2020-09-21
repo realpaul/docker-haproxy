@@ -6,10 +6,11 @@ RUN echo "Acquire::Check-Valid-Until \"false\";" > /etc/apt/apt.conf
 
 ENV SUPERVISOR_VERSION 3.3.0
 
-RUN buildDeps='curl gcc libc6-dev libpcre3-dev libssl-dev make libreadline-dev' \
+RUN buildDeps='curl gcc libc6-dev libpcre3-dev libssl-dev make libreadline-dev zlib1g-dev' \
     && set -x \
     && apt-get update && apt-get install --no-install-recommends -yqq $buildDeps \
     cron \
+	perl \
     wget \
     ca-certificates \
     curl \
@@ -24,7 +25,13 @@ RUN buildDeps='curl gcc libc6-dev libpcre3-dev libssl-dev make libreadline-dev' 
     && cd supervisor-${SUPERVISOR_VERSION} && python setup.py install \
     && apt-get clean autoclean && apt-get autoremove -y \
     && rm -rf /var/lib/apt/lists/*
-
+	
+RUN cd /usr/local/bin && wget https://dl.eff.org/certbot-auto \
+	&& chmod 755 /usr/local/bin/certbot-auto
+	
+RUN ["/bin/bash","-c","echo -e 'Y\n' | /usr/local/bin/certbot-auto --os-packages-only"]
+RUN ["/bin/bash","-c","echo -e 'Y\n' | /usr/local/bin/certbot-auto --install-only"]
+	
 ENV LUA_VERSION 5.3.0
 ENV LUA_VERSION_SHORT 53
 
@@ -36,9 +43,17 @@ RUN cd /usr/src \
     && make linux \
     && make INSTALL_TOP=/opt/lua${LUA_VERSION_SHORT} install
 
-ENV HAPROXY_MAJOR 1.7
-ENV HAPROXY_VERSION 1.7.11
-ENV HAPROXY_MD5 25be5ad717a71da89a65c3c24250e2eb
+ENV HAPROXY_MAJOR 2.2
+ENV HAPROXY_VERSION 2.2.2
+ENV HAPROXY_MD5 dfef423ff9f191c401d6b29e7eb9d6e2
+
+RUN cd /root && wget https://github.com/openssl/openssl/archive/OpenSSL_1_1_0l.tar.gz \
+	&& tar -zxvf OpenSSL_1_1_0l.tar.gz \
+	&& cd openssl-OpenSSL_1_1_0l \
+	&& ./config shared zlib --prefix=/usr/local/openssl-1.1.0 --openssldir=/usr/local/openssl-1.1.0/ssl \
+	&& make && make install \
+	&& cp /usr/local/openssl-1.1.0/lib/libssl.so.1.1 /lib/x86_64-linux-gnu \
+	&& cp /usr/local/openssl-1.1.0/lib/libcrypto.so.1.1 /lib/x86_64-linux-gnu
 
 
 RUN cd / && curl -SL "http://www.haproxy.org/download/${HAPROXY_MAJOR}/src/haproxy-${HAPROXY_VERSION}.tar.gz" -o haproxy.tar.gz \
@@ -47,9 +62,12 @@ RUN cd / && curl -SL "http://www.haproxy.org/download/${HAPROXY_MAJOR}/src/hapro
 	&& tar -xzf haproxy.tar.gz -C /usr/src/haproxy --strip-components=1 \
 	&& rm haproxy.tar.gz \
 	&& make -C /usr/src/haproxy \
-		TARGET=linux2628 \
+		TARGET=linux-glibc \
+		ARCH=x86_64 \
 		USE_PCRE=1 PCREDIR= \
 		USE_OPENSSL=1 \
+		SSL_LIB=/usr/local/openssl-1.1.0/lib \
+		SSL_INC=/usr/local/openssl-1.1.0/include \
 		USE_ZLIB=1 \
 		USE_LUA=yes LUA_LIB=/opt/lua53/lib/ \
         	LUA_INC=/opt/lua53/include/ LDFLAGS=-ldl \
@@ -74,6 +92,9 @@ RUN crontab /var/crontab.txt && chmod 600 /etc/crontab
 COPY supervisord.conf /etc/supervisord.conf
 COPY certs.sh /
 COPY bootstrap.sh /
+COPY haproxy-systemd-wrapper /usr/local/sbin
+
+RUN chmod 755 /usr/local/sbin/haproxy-systemd-wrapper
 
 RUN mkdir /jail
 

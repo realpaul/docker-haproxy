@@ -12,7 +12,7 @@
 ## configuration ##
 ###################
 
-LE_CLIENT="certbot"
+LE_CLIENT="certbot-auto"
 
 HAPROXY_RELOAD_CMD="supervisorctl signal HUP haproxy"
 
